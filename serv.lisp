@@ -1,44 +1,60 @@
 (require :usocket)
 
-(defparameter file-types '((html . text)
-						   (css  . text)
-						   (png  . image)
-						   (jpg  . image)
-						   (jpeg . image)))
+(defparameter statuses '((200 . "OK")
+                         (404 . "Not Found")))
 
-(defun get-header-type (filename)
-  (let* ((dot-pos (1+ (position #\. filename :from-end t)))
-		 (str-file-type (subseq filename dot-pos))
-		 (file-type (read-from-string str-file-type))
-		 (mime-alist (assoc file-type file-types))
-		 (mime (if mime-alist mime-alist '(plain . text))))
-	(format nil "Content-Type: ~a/~a" (cdr mime) (car mime))))
+(defparameter content-types '((text (html css plain))
+                              (image (png jpg jpeg svg))
+                              (application (json xml))))
 
-(defun get-req (stream)
+
+(defun get-mime (extension)
+  (let ((item (find extension
+                    content-types
+                    :key #'cadr
+                    :test (lambda (item list)
+                            (member item list)))))
+    (read-from-string (format nil "~a/~a" (car item) extension))))
+
+(defun get-path (stream)
   (let ((line (read-line stream)))
-	(subseq line
-			(1+ (position #\slash line))
-			(position #\space line :from-end t))))
+    (subseq line
+            (1+ (position #\slash line))
+            (position #\space line :from-end t))))
 
+(defun get-header (header)
+  (let ((status (assoc (car header) statuses))
+        (content-type (cdr header)))
+    (format nil
+            "HTTP/1.1 ~a ~a~%Content-Type: ~a~%~%"
+            (car status)
+            (cdr status)
+            content-type)))
 
-(defun read-file-to-stream (file-stream stream)
-  (let ((byte (read-byte file-stream nil)))
-	(when byte
-	  (write-byte byte stream)
-	  (read-file-to-stream file-stream stream))))
+(defun send-data (header data)
+  (princ (get-header header))
+  (princ data))
 
-(defun send-file (filename stream)
-  (format stream "HTTP/1.1 200 OK~%~a~%~%" (get-header-type filename))
-  (with-open-file (fstream filename :direction :input :element-type 'unsigned-byte)
-	(read-file-to-stream fstream stream)))
+(defun send-file (filename)
+  (let* ((extension (read-from-string (pathname-type filename))) ;; pathname-type может вернуть nil, и тогда read-from-string - это не понравится
+         (mime (get-mime extension)))
+    (with-open-file (fstream filename :direction :input :element-type 'unsigned-byte :if-does-not-exist nil)
+      (if fstream
+          (progn
+            (princ (get-header `(200 . ,mime)))
+            (loop for byte = (read-byte fstream nil)
+                  when (not byte) return 'eof
+                    do (write-byte byte *standard-output*)))
+          (send-data '(404 . text/html) "<html><h1>404 Not Found</h1></html>")))))
 
 (defun serv (port req-handler)
   (let ((socket (usocket:socket-listen "localhost" port)))
-	(unwind-protect (loop do
-						  (let* ((connection (usocket:socket-accept socket :element-type :default))
-								 (stream (usocket:socket-stream connection))
-								 (req (get-req stream)))
-							(funcall req-handler req stream)
-							(force-output stream)
-							(usocket:socket-close connection)))
-			 (usocket:socket-close socket))))
+    (unwind-protect (loop do
+      (let* ((connection (usocket:socket-accept socket :element-type :default))
+             (stream (usocket:socket-stream connection))
+             (path (get-path stream))
+             (*standard-output* stream))
+        (funcall req-handler path)
+        (force-output stream)
+        (usocket:socket-close connection)))
+      (usocket:socket-close socket))))
