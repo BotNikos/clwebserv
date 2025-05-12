@@ -7,6 +7,7 @@
                               (image (png jpg jpeg svg))
                               (application (json xml))))
 
+;;;; Functional part
 
 (defun get-mime (extension)
   (let ((item (find extension
@@ -31,13 +32,22 @@
             (cdr status)
             content-type)))
 
+(defun parse-params (s)
+  (let* ((i1 (position #\= s))
+         (i2 (position #\& s)))
+    (cons (cons (read-from-string (subseq s 0 i1))
+                (subseq s (1+ i1) i2))
+          (and i2 (parse-params (subseq s (1+ i2)))))))
+
+;;;; Imperative part
+
 (defun send-data (header data)
   (princ (get-header header))
   (princ data))
 
 (defun send-file (filename)
-  (let* ((extension (read-from-string (pathname-type filename))) ;; pathname-type может вернуть nil, и тогда read-from-string - это не понравится
-         (mime (get-mime extension)))
+  (let* ((extension (pathname-type filename))
+         (mime (get-mime (if extension (read-from-string extension) 'html))))
     (with-open-file (fstream filename :direction :input :element-type 'unsigned-byte :if-does-not-exist nil)
       (if fstream
           (progn
@@ -45,7 +55,7 @@
             (loop for byte = (read-byte fstream nil)
                   when (not byte) return 'eof
                     do (write-byte byte *standard-output*)))
-          (send-data '(404 . text/html) "<html><h1>404 Not Found</h1></html>")))))
+          (send-data '(404 . text/html) "<html><h1 style=\"text-align: center\">404 Not Found</h1></div></html>")))))
 
 (defun serv (port req-handler)
   (let ((socket (usocket:socket-listen "localhost" port)))
@@ -58,3 +68,4 @@
         (force-output stream)
         (usocket:socket-close connection)))
       (usocket:socket-close socket))))
+
