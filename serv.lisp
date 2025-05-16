@@ -17,11 +17,10 @@
                             (member item list)))))
     (read-from-string (format nil "~a/~a" (car item) extension))))
 
-(defun get-path (stream)
-  (let ((line (read-line stream)))
-    (subseq line
-            (1+ (position #\slash line))
-            (position #\space line :from-end t))))
+(defun get-url (line)
+  (subseq line
+          (1+ (position #\slash line))
+          (position #\space line :from-end t)))
 
 (defun get-header (header)
   (let ((status (assoc (car header) statuses))
@@ -35,9 +34,10 @@
 (defun parse-params (s)
   (let* ((i1 (position #\= s))
          (i2 (position #\& s)))
-    (cons (cons (read-from-string (subseq s 0 i1))
-                (subseq s (1+ i1) i2))
-          (and i2 (parse-params (subseq s (1+ i2)))))))
+    (if s
+        (cons (cons (read-from-string (subseq s 0 i1))
+                    (subseq s (1+ i1) i2))
+              (and i2 (parse-params (subseq s (1+ i2))))))))
 
 ;;;; Imperative part
 
@@ -62,10 +62,13 @@
     (unwind-protect (loop do
       (let* ((connection (usocket:socket-accept socket :element-type :default))
              (stream (usocket:socket-stream connection))
-             (path (get-path stream))
+             (url (get-url (read-line stream)))
+             (path (subseq url 0 (position #\? url)))
+             (params (parse-params (if (position #\? url)
+                                       (subseq url (1+ (position #\? url)))
+                                       nil)))
              (*standard-output* stream))
-        (funcall req-handler path)
+        (funcall req-handler path params)
         (force-output stream)
         (usocket:socket-close connection)))
       (usocket:socket-close socket))))
-
