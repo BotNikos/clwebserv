@@ -39,17 +39,12 @@
 
 (defun decode-param (s)
   (labels ((p (lst)
-           (let ((c (car lst)))
-             (if c
-                 (cons (case c
-                         (#\+ #\space)
-                         (#\% (decode-char (list (second lst) (third lst))))
-                         (otherwise c))
-                       (p (cdr lst)))
-                 nil))))
+           (when (car lst)
+             (case (car lst)
+               (#\+ (cons #\space (p (cdr lst))))
+               (#\% (cons (decode-char (list (second lst) (third lst))) (p (cdddr lst))))
+               (otherwise (cons (car lst) (p (cdr lst))))))))
     (coerce (p (coerce s 'list)) 'string)))
-
-(decode-param "Hello+Nikita%3f")
 
 (defun parse-params (s)
   (let* ((i1 (position #\= s))
