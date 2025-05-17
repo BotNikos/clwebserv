@@ -31,6 +31,26 @@
             (cdr status)
             content-type)))
 
+(defun decode-char (lst)
+  (let ((code (parse-integer (coerce lst 'string) :radix 16 :junk-allowed t)))
+    (if code
+        (code-char code)
+        #\_)))
+
+(defun decode-param (s)
+  (labels ((p (lst)
+           (let ((c (car lst)))
+             (if c
+                 (cons (case c
+                         (#\+ #\space)
+                         (#\% (decode-char (list (second lst) (third lst))))
+                         (otherwise c))
+                       (p (cdr lst)))
+                 nil))))
+    (coerce (p (coerce s 'list)) 'string)))
+
+(decode-param "Hello+Nikita%3f")
+
 (defun parse-params (s)
   (let* ((i1 (position #\= s))
          (i2 (position #\& s)))
