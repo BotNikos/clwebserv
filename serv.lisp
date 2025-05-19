@@ -19,7 +19,7 @@
 
 (defun get-url (line)
   (subseq line
-          (1+ (position #\slash line))
+          (position #\slash line)
           (position #\space line :from-end t)))
 
 (defun get-header (header)
@@ -51,7 +51,7 @@
          (i2 (position #\& s)))
     (if s
         (cons (cons (read-from-string (subseq s 0 i1))
-                    (subseq s (1+ i1) i2))
+                    (decode-param (subseq s (1+ i1) i2)))
               (and i2 (parse-params (subseq s (1+ i2))))))))
 
 ;;;; Imperative part
@@ -74,14 +74,13 @@
 
 (defun serv (port req-handler)
   (let ((socket (usocket:socket-listen "localhost" port)))
+    (format t "Socket opened on ~d port~%" (usocket:get-local-port socket))
     (unwind-protect (loop do
       (let* ((connection (usocket:socket-accept socket :element-type :default))
              (stream (usocket:socket-stream connection))
              (url (get-url (read-line stream)))
              (path (subseq url 0 (position #\? url)))
-             (params (parse-params (if (position #\? url)
-                                       (subseq url (1+ (position #\? url)))
-                                       nil)))
+             (params (parse-params (when (position #\? url) (subseq url (1+ (position #\? url))))))
              (*standard-output* stream))
         (funcall req-handler path params)
         (force-output stream)

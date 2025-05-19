@@ -1,8 +1,14 @@
 (load "serv.lisp")
 
+(defun hello-form (params)
+  (if params
+      (send-data '(200 . text/html) (format nil "<html>Hello ~a</html>" (cdr (assoc 'fname params))))
+      (send-file "hello.html")))
+
 (defun req-handler (path params)
   (cond ((equal path "data") (send-data '(200 . application/json) "{\"name\": \"Nikita\", \"age\": 21}"))
-        (t (send-file "hello.html"))))
+        ((equal path "/hello") (hello-form params))
+        (t (send-file (subseq path 1)))))
 
 (defun main ()
-  (serv 8081 #'req-handler))
+  (serv 0 #'req-handler))
