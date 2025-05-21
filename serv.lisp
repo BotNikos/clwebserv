@@ -54,6 +54,24 @@
                     (decode-param (subseq s (1+ i1) i2)))
               (and i2 (parse-params (subseq s (1+ i2))))))))
 
+;;; TODO: Добавить првоерку на отсутствие ключа в alit'е параметров
+(defun template-insert (lst params)
+  (let* ((delim-pos (position #\~ lst))
+         (key (subseq lst 0 delim-pos)))
+    (append (coerce (cdr (assoc (read-from-string (coerce key 'string))
+                                params))
+                    'list)
+            (subseq lst (1+ delim-pos)))))
+
+(defun template-string (s params)
+  (labels ((p (lst)
+             (when (car lst)
+               (case (car lst)
+                 (#\~ (let ((insert (template-insert (cdr lst) params)))
+                        (cons (car insert) (p (cdr insert)))))
+                 (otherwise (cons (car lst) (p (cdr lst))))))))
+    (coerce (p (coerce s 'list)) 'string)))
+
 ;;;; Imperative part
 
 (defun send-data (header data)
@@ -86,3 +104,5 @@
         (force-output stream)
         (usocket:socket-close connection)))
       (usocket:socket-close socket))))
+
+
