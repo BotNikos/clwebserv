@@ -54,6 +54,15 @@
                     (decode-param (subseq s (1+ i1) i2)))
               (and i2 (parse-params (subseq s (1+ i2))))))))
 
+(defun template-var (lst params)
+  (let* ((delim-pos (position #\~ lst))
+         (key (subseq lst 0 delim-pos)))
+    (cdr (assoc (read-from-string (coerce key 'string))
+                        params))))
+
+
+(template-var (coerce "hello~" 'list) '((hello . "help?")))
+
 ;;; TODO: Добавить првоерку на отсутствие ключа в alit'е параметров
 (defun template-insert (lst params)
   (let* ((delim-pos (position #\~ lst))
@@ -63,6 +72,19 @@
                     'list)
             (subseq lst (1+ delim-pos)))))
 
+
+(defun template-insert (lst params)
+  (case (car lst)
+    (#\v (let ((delim-end (position #\~ lst)))
+           (append (coerce (template-var (cdr lst) params) 'list)
+                   (subseq lst (1+ delim-end)))))))
+
+
+(template-insert (coerce "vhello~</div>" 'list) '((hello . "Help?")))
+
+
+;; template-string делает что надо с результатом ф-ии template-insert,
+;; которая в свою очередь только возвращает результаты
 (defun template-string (s params)
   (labels ((p (lst)
              (when (car lst)
@@ -71,6 +93,7 @@
                         (cons (car insert) (p (cdr insert)))))
                  (otherwise (cons (car lst) (p (cdr lst))))))))
     (coerce (p (coerce s 'list)) 'string)))
+
 
 ;;;; Imperative part
 

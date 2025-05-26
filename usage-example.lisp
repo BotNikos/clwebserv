@@ -1,4 +1,5 @@
-(load "serv.lisp")
+(require "asdf")
+(asdf:load-system 'clwebserv)
 
 (defun hello-form (params)
   (if params
