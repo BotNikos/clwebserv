@@ -54,46 +54,14 @@
                     (decode-param (subseq s (1+ i1) i2)))
               (and i2 (parse-params (subseq s (1+ i2))))))))
 
-(defun template-var (lst params)
-  (let* ((delim-pos (position #\~ lst))
-         (key (subseq lst 0 delim-pos)))
-    (cdr (assoc (read-from-string (coerce key 'string))
-                        params))))
-
-
-(template-var (coerce "hello~" 'list) '((hello . "help?")))
-
-;;; TODO: Добавить првоерку на отсутствие ключа в alit'е параметров
-(defun template-insert (lst params)
-  (let* ((delim-pos (position #\~ lst))
-         (key (subseq lst 0 delim-pos)))
-    (append (coerce (cdr (assoc (read-from-string (coerce key 'string))
-                                params))
-                    'list)
-            (subseq lst (1+ delim-pos)))))
-
-
-(defun template-insert (lst params)
-  (case (car lst)
-    (#\v (let ((delim-end (position #\~ lst)))
-           (append (coerce (template-var (cdr lst) params) 'list)
-                   (subseq lst (1+ delim-end)))))))
-
-
-(template-insert (coerce "vhello~</div>" 'list) '((hello . "Help?")))
-
-
-;; template-string делает что надо с результатом ф-ии template-insert,
-;; которая в свою очередь только возвращает результаты
 (defun template-string (s params)
-  (labels ((p (lst)
-             (when (car lst)
-               (case (car lst)
-                 (#\~ (let ((insert (template-insert (cdr lst) params)))
-                        (cons (car insert) (p (cdr insert)))))
-                 (otherwise (cons (car lst) (p (cdr lst))))))))
-    (coerce (p (coerce s 'list)) 'string)))
+  (declare (special params))
+  (let* ((start (1+ (position #\| s)))
+         (end (position #\| s :start start)))
+    (format nil "~a~a~a" (subseq s 0 (1- start)) (eval (read-from-string (subseq s start end))) (subseq s (1+ end)))))
 
+
+(template-string "<div>Hello |(apply #'concatenate `(string . ,(loop repeat 5 collect (format nil \"<div>~a~%</div>\" (cdr (assoc 'name params))))))|</div>" '((name . "Help?")))
 
 ;;;; Imperative part
 
