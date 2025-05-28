@@ -56,12 +56,17 @@
 
 (defun template-string (s params)
   (declare (special params))
-  (let* ((start (1+ (position #\| s)))
-         (end (position #\| s :start start)))
-    (format nil "~a~a~a" (subseq s 0 (1- start)) (eval (read-from-string (subseq s start end))) (subseq s (1+ end)))))
+  (let* ((start (position #\| s)))
+    (if start
+        (let* ((end (position #\| s :start (1+ start)))
+               (new-string (format nil "~a~a~a" (subseq s 0 start) (eval (read-from-string (subseq s (1+ start) end))) (subseq s (1+ end)))))
+          (template-string new-string params))
+        s)))
 
 
 (template-string "<div>Hello |(apply #'concatenate `(string . ,(loop repeat 5 collect (format nil \"<div>~a~%</div>\" (cdr (assoc 'name params))))))|</div>" '((name . "Help?")))
+(template-string "|(format nil \"~{<div>~a<div/>~%~}\" (cdr (assoc 'list params)))|" '((list . ("1.png" "2.png" "3.png" "4.png" "5.png"))))
+(template-string "<div class=\"|(if nil \"hello\" \"clsName\")|\">|(cdr (assoc 'name params))|</div>" '((name . "some test")))
 
 ;;;; Imperative part
 
