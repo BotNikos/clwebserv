@@ -63,10 +63,9 @@
           (template-string new-string params))
         s)))
 
-
-(template-string "<div>Hello |(apply #'concatenate `(string . ,(loop repeat 5 collect (format nil \"<div>~a~%</div>\" (cdr (assoc 'name params))))))|</div>" '((name . "Help?")))
-(template-string "|(format nil \"~{<div>~a<div/>~%~}\" (cdr (assoc 'list params)))|" '((list . ("1.png" "2.png" "3.png" "4.png" "5.png"))))
-(template-string "<div class=\"|(if nil \"hello\" \"clsName\")|\">|(cdr (assoc 'name params))|</div>" '((name . "some test")))
+;; (template-string "<div>Hello |(apply #'concatenate `(string . ,(loop repeat 5 collect (format nil \"<div>~a~%</div>\" (cdr (assoc 'name params))))))|</div>" '((name . "Help?")))
+;; (template-string "|(format nil \"~{<div>~a<div/>~%~}\" (cdr (assoc 'list params)))|" '((list . ("1.png" "2.png" "3.png" "4.png" "5.png"))))
+;; (template-string "<div class=\"|(if nil \"hello\" \"clsName\")|\">|(cdr (assoc 'name params))|</div>" '((name . "some test")))
 
 ;;;; Imperative part
 
@@ -84,7 +83,19 @@
             (loop for byte = (read-byte fstream nil)
                   when (not byte) return 'eof
                     do (write-byte byte *standard-output*)))
-          (send-data '(404 . text/html) "<html><h1 style=\"text-align: center\">404 Not Found</h1></div></html>")))))
+          (send-data '(404 . text/html) "<html><h1 style=\"text-align: center\">404 Not Found</h1></html>")))))
+
+(defun send-template (filename params)
+  (let* ((extension (pathname-type filename))
+         (mime (get-mime (if extension (read-from-string extension) 'html))))
+    (with-open-file (fstream filename :direction :input :if-does-not-exist nil)
+      (if fstream
+          (progn
+            (princ (get-header `(200 . ,mime)))
+            (loop for line = (read-line fstream nil)
+                  when (not line) return 'eof
+                    do (format t "~a~%" (template-string line params))))
+          (send-data '(404 . text/html) "<html><h1 style=\"text-align:center\">404 Not Found</h1></html>")))))
 
 (defun serv (port req-handler)
   (let ((socket (usocket:socket-listen "localhost" port)))
