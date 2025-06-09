@@ -1,18 +1,48 @@
 <!doctype html>
-<html class="no-js" lang="">
+<html>
 	<head>
-		<meta charset="utf-8">
-		<meta http-equiv="x-ua-compatible" content="ie=edge">
-		<title>some test</title>
-		<meta name="description" content="">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>PokeTab</title>
+		<link rel="stylesheet" href="style.css" type="text/css" media="screen" />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap" rel="stylesheet">
 	</head>
 	<body>
-		<h1>Hello?</h1>
-		<p>Here you can see text under H1 tag</p>
-		<h2>World!</h2>
-		<p>This is a text under h2 tag</p>
-		<h1>Here you can see a beautiful image</h1>
-		<img alt="flowers" src="./12.png" style="width: 500px" />
+		<div class="container">
+
+			<div class="top-container">
+				<div class="quick-help">
+					<h1>Quick help</h1>
+					<h2>Basic commands:</h2>
+					<p><span>></span> s &ltquery&gt - find query in google by default</p>
+					<p><span>></span> new category &ltname&gt - create a new category</p>
+					<p><span>></span> new item &ltcategory&gt &ltname&gt &lturl&gt - create a new item in the category</p>
+					<p><span>></span> &ltitemName&gt - go to a previously saved item</p>
+				</div>
+
+				<div class="image-container">
+					<img class="sprite-image" src="sprites/zigzagoon-galar.png"/>
+					<div class="sprite-name">Zigagoon galar</div>
+
+					<!-- <img class="sprite-image" src="sprites/blastoise-gmax.png"/> -->
+					<!-- <div class="sprite-name">Blastoise Gmax</div> -->
+				</div>
+
+				<div class="info-container">
+					<div class="time container-shadow">
+						<h1>7 June 2025</h1>
+						<h2>03:27:00 PM</h2>
+					</div>
+				</div>
+			</div>
+
+			<div class="input-container container-shadow">
+				<span class="input-arrow"> > </span>
+				<input class="input-field" placeholder="Enter your command..."/>
+			</div>
+			<div class="category-container">
+				|(put-data params)|
+			</div>
+		</div>
 	</body>
 </html>

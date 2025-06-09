@@ -1,14 +1,43 @@
 (require "asdf")
 (asdf:load-system 'clwebserv)
 
-(defun hello-form (params)
-  (if params
-      (send-data '(200 . text/html) (format nil "<html>Hello ~a</html>" (cdr (assoc 'fname params))))
-      (send-file "resources/hello.html")))
+(ql:quickload :sqlite)
+(use-package :sqlite)
+
+(defun categ-items-unite (categories items)
+  (labels ((select-items (category_id items)
+             (remove-if-not (lambda (item) (eq category_id (cadddr item))) items)))
+    (if (car categories)
+        (cons (cons (select-items (caar categories) items)
+                    (car categories))
+              (categ-items-unite (cdr categories) items))
+        nil)))
+
+(defun put-data (params)
+  (apply #'concatenate
+         `(string .
+           ,(loop for category in (cdr (assoc 'categories params))
+                  collect "<div class=\"category container-shadow\">"
+                  collect (format nil "<div class=\"category-name\" style=\"color: ~a\">~a</div>" (cadddr category) (caddr category))
+                  collect "<hr/>"
+                  collect "<div class=\"category-items-container\">"
+                  collect (apply #'concatenate `(string . ,(loop for item in (car category)
+                                collect (format nil "<a class=\"category-item\" href=\"~a\">~a</a>" (caddr item) (cadr item)))))
+                  collect "</div></div>"))))
+
+(defun send-poke (params)
+  (let* ((db (connect "custom-tab.db"))
+         (categories (execute-to-list db "select * from categories"))
+         (items (execute-to-list db "select * from items"))
+         (params (cons (cons 'categories
+                             (categ-items-unite categories items))
+                       params)))
+    (disconnect db)
+    (send-template "resources/index.html" params)))
 
 (defun req-handler (path params)
-  (cond ((equal path "/data") (send-data '(200 . application/json) "{\"name\": \"Nikita\", \"age\": 21}"))
-        ((equal path "/hello") (hello-form params))
+  (cond ((or (equal path "/index.html") (equal path "/"))
+         (send-poke params))
         (t (send-file (format nil "resources/~a" (subseq path 1))))))
 
 (defun main ()

@@ -63,10 +63,6 @@
           (template-string new-string params))
         s)))
 
-;; (template-string "<div>Hello |(apply #'concatenate `(string . ,(loop repeat 5 collect (format nil \"<div>~a~%</div>\" (cdr (assoc 'name params))))))|</div>" '((name . "Help?")))
-;; (template-string "|(format nil \"~{<div>~a<div/>~%~}\" (cdr (assoc 'list params)))|" '((list . ("1.png" "2.png" "3.png" "4.png" "5.png"))))
-;; (template-string "<div class=\"|(if nil \"hello\" \"clsName\")|\">|(cdr (assoc 'name params))|</div>" '((name . "some test")))
-
 ;;;; Imperative part
 
 (defun send-data (header data)
