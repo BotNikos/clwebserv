@@ -25,8 +25,8 @@
 
 				<div class="info-container">
 					<div class="time container-shadow">
-						<h1>7 June 2025</h1>
-						<h2>03:27:00 PM</h2>
+						<h1 id="date"></h1>
+						<h2 id="time"></h2>
 					</div>
 				</div>
 			</div>
@@ -40,4 +40,24 @@
 			</div>
 		</div>
 	</body>
+	<script>
+	 let dateElem = document.getElementById ('date')
+	 let timeElem = document.getElementById ('time')
+
+	 function changeTime () {
+		 let date = new Date ()
+
+		 let day = new Intl.DateTimeFormat('en-US', {day: '2-digit'}).format(date)
+		 let month = new Intl.DateTimeFormat('en-US', {month: 'long'}).format(date)
+		 let year = new Intl.DateTimeFormat('en-US', {year: 'numeric'}).format(date)
+		 let time = new Intl.DateTimeFormat('en-US', {hour12: true, hour: '2-digit', minute: 'numeric', second: 'numeric'}).format(date)
+
+		 dateElem.innerHTML = `${day} ${month} ${year}`
+		 timeElem.innerHTML = `${time}`
+	 }
+
+	 changeTime ();
+	 setInterval (changeTime, 1000);
+	</script>
+
 </html>
