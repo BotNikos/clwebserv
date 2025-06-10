@@ -4,6 +4,22 @@
 (ql:quickload :sqlite)
 (use-package :sqlite)
 
+(setf *random-state* (make-random-state t))
+
+(let ((images nil)
+      (images-count nil))
+  (defun random-poke (path)
+    (if images-count
+        (let ((poke (aref images (random images-count))))
+          (format nil "<img class=\"sprite-name\" src=\"/sprites/~a\"/> <div class=\"sprite-name\">~a</div>"
+                  (file-namestring poke)
+                  (string-capitalize (substitute-if #\Space (lambda (char) (equal char #\-)) (pathname-name poke)))))
+        (let ((images-list (uiop:directory-files path)))
+          (setf images-count (list-length images-list))
+          (setf images (make-array `(,images-count)
+                                   :initial-contents images-list))
+          (random-poke path)))))
+
 (defun categ-items-unite (categories items)
   (labels ((select-items (category_id items)
              (remove-if-not (lambda (item) (eq category_id (cadddr item))) items)))
