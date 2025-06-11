@@ -1,35 +1,29 @@
 (require :usocket)
 
-(defparameter statuses '((200 . "OK")
-                         (404 . "Not Found")))
-
-(defparameter content-types '((text (html css plain))
-                              (image (png jpg jpeg svg))
-                              (application (json xml))))
-
 ;;;; Functional part
 
 (defun get-mime (extension)
-  (let ((item (find extension
-                    content-types
-                    :key #'cadr
-                    :test (lambda (item list)
-                            (member item list)))))
-    (read-from-string (format nil "~a/~a" (car item) extension))))
+  (case (read-from-string extension)
+    (html "text/html")
+    (css "text/css")
+    (js "text/javascript")
+    (png "image/png")
+    (jpg "image/jpg")
+    (jpeg "image/jpeg")
+    (svg "image/svg")
+    (otherwise "text/plain")))
 
 (defun get-url (line)
   (subseq line
           (position #\slash line)
           (position #\space line :from-end t)))
 
+;; status needs to be first always
 (defun get-header (header)
-  (let ((status (assoc (car header) statuses))
-        (content-type (cdr header)))
-    (format nil
-            "HTTP/1.1 ~a ~a~%Content-Type: ~a~%~%"
-            (car status)
-            (cdr status)
-            content-type)))
+  (format nil "HTTP/1.1 ~a~%~{~a~^~%~}~%~%"
+          (cdr (assoc 'status header))
+          (loop for item in (cdr header)
+                collect (format nil "~a: ~a" (car item) (cdr item)))))
 
 (defun decode-char (lst)
   (let ((code (parse-integer (coerce lst 'string) :radix 16 :junk-allowed t)))
@@ -65,33 +59,30 @@
 
 ;;;; Imperative part
 
-(defun send-data (header data)
+(defun send-data (data header)
   (princ (get-header header))
   (princ data))
 
-(defun send-file (filename)
-  (let* ((extension (pathname-type filename))
-         (mime (get-mime (if extension (read-from-string extension) 'html))))
-    (with-open-file (fstream filename :direction :input :element-type 'unsigned-byte :if-does-not-exist nil)
+(defun send-file (filename loop)
+  (let* ((extension (pathname-type filename)))
+    (with-open-file (fstream filename :direction :input :element-type :default :if-does-not-exist nil)
       (if fstream
           (progn
-            (princ (get-header `(200 . ,mime)))
+            (princ (get-header `((status . "200 OK") ("Content-Type" . ,(get-mime extension)))))
+            (funcall loop fstream))
+          (send-data "<html><h1 style=\"text-align: center\">404 Not Found</h1></html>" '((status . "404 Not Foud") ("Content-Type" . "text/html")))))))
+
+(defun send (type data &key params header)
+  (case type
+    (data (send-data data (if header header '((status . "200 OK") ("Content-Type" . "text/plain")))))
+    (file (send-file data (lambda (fstream)
             (loop for byte = (read-byte fstream nil)
                   when (not byte) return 'eof
-                    do (write-byte byte *standard-output*)))
-          (send-data '(404 . text/html) "<html><h1 style=\"text-align: center\">404 Not Found</h1></html>")))))
-
-(defun send-template (filename params)
-  (let* ((extension (pathname-type filename))
-         (mime (get-mime (if extension (read-from-string extension) 'html))))
-    (with-open-file (fstream filename :direction :input :if-does-not-exist nil)
-      (if fstream
-          (progn
-            (princ (get-header `(200 . ,mime)))
-            (loop for line = (read-line fstream nil)
-                  when (not line) return 'eof
-                    do (format t "~a~%" (template-string line params))))
-          (send-data '(404 . text/html) "<html><h1 style=\"text-align:center\">404 Not Found</h1></html>")))))
+                    do (write-byte byte *standard-output*)))))
+    (temp (send-file data (lambda (fstream)
+                            (loop for line = (read-line fstream nil)
+                                  when (not line) return 'eof
+                                    do (format t "~a~%" (template-string line params))))))))
 
 (defun serv (port req-handler)
   (let ((socket (usocket:socket-listen "localhost" port)))

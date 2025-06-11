@@ -3,9 +3,6 @@
 	<head>
 		<title>PokeTab</title>
 		<link rel="stylesheet" href="style.css" type="text/css" media="screen" />
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap" rel="stylesheet">
 	</head>
 	<body>
 		<div class="container">
@@ -14,8 +11,8 @@
 					<h1>Quick help</h1>
 					<h2>Basic commands:</h2>
 					<p><span>></span> s &ltquery&gt - find query in google by default</p>
-					<p><span>></span> new category &ltname&gt - create a new category</p>
-					<p><span>></span> new item &ltcategory&gt &ltname&gt &lturl&gt - create a new item in the category</p>
+					<p><span>></span> new category &ltname&gt &ltcolor&gt - create a new category</p>
+					<p><span>></span> new item &ltname&gt &ltcategory&gt &lturl&gt - create a new item in the category</p>
 					<p><span>></span> &ltitemName&gt - go to a previously saved item</p>
 				</div>
 
@@ -23,7 +20,7 @@
 					|(random-poke #p"resources/sprites/")|
 				</div>
 
-				<div class="info-container">
+				<div id="info-container" class="info-container">
 					<div class="time container-shadow">
 						<h1 id="date"></h1>
 						<h2 id="time"></h2>
@@ -33,31 +30,12 @@
 
 			<div class="input-container container-shadow">
 				<span class="input-arrow"> > </span>
-				<input class="input-field" placeholder="Enter your command..."/>
+				<input id="input" autofocus class="input-field" placeholder="Enter your command..."/>
 			</div>
 			<div class="category-container">
 				|(put-data params)|
 			</div>
 		</div>
 	</body>
-	<script>
-	 let dateElem = document.getElementById ('date')
-	 let timeElem = document.getElementById ('time')
-
-	 function changeTime () {
-		 let date = new Date ()
-
-		 let day = new Intl.DateTimeFormat('en-US', {day: '2-digit'}).format(date)
-		 let month = new Intl.DateTimeFormat('en-US', {month: 'long'}).format(date)
-		 let year = new Intl.DateTimeFormat('en-US', {year: 'numeric'}).format(date)
-		 let time = new Intl.DateTimeFormat('en-US', {hour12: true, hour: '2-digit', minute: 'numeric', second: 'numeric'}).format(date)
-
-		 dateElem.innerHTML = `${day} ${month} ${year}`
-		 timeElem.innerHTML = `${time}`
-	 }
-
-	 changeTime ();
-	 setInterval (changeTime, 1000);
-	</script>
-
+	<script defer src="main.js"></script>
 </html>

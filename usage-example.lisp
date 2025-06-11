@@ -38,23 +38,38 @@
                   collect "<hr/>"
                   collect "<div class=\"category-items-container\">"
                   collect (apply #'concatenate `(string . ,(loop for item in (car category)
-                                collect (format nil "<a class=\"category-item\" href=\"~a\">~a</a>" (caddr item) (cadr item)))))
+                                                                 collect (format nil
+                                                                                 "<a class=\"category-item\" href=\"~a\">~a</a>"
+                                                                                 (caddr item)
+                                                                                 (cadr item)))))
                   collect "</div></div>"))))
 
 (defun send-poke (params)
   (let* ((db (connect "custom-tab.db"))
          (categories (execute-to-list db "select * from categories"))
          (items (execute-to-list db "select * from items"))
-         (params (cons (cons 'categories
-                             (categ-items-unite categories items))
-                       params)))
+         (params `((categories . ,(categ-items-unite categories items)) . ,params)))
     (disconnect db)
-    (send-template "resources/index.html" params)))
+    (send 'temp "resources/index.html" :params params)))
+
+(defun new (params)
+  (let ((db (connect "custom-tab.db")))
+    (if (equal (cdr (assoc 'type params))  "category")
+        (execute-non-query db "insert into categories (title, color) values (?, ?)"
+                           (cdr (assoc 'title params))
+                           (format nil "#~a" (cdr (assoc 'color params))))
+        (execute-non-query db "insert into items (title, category_id, url) values (?, (select id from categories where title like ?), ?)"
+                           (cdr (assoc 'title params))
+                           (cdr (assoc 'category params))
+                           (cdr (assoc 'url params))))
+    (disconnect db)
+    (send 'data "{\"success\": true}" :header '((status . "200 OK") ("Content-Type" . "application/json")))))
 
 (defun req-handler (path params)
   (cond ((or (equal path "/index.html") (equal path "/"))
          (send-poke params))
-        (t (send-file (format nil "resources/~a" (subseq path 1))))))
+        ((equal path "/new") (new params))
+        (t (send 'file (format nil "resources/~a" (subseq path 1))))))
 
 (defun main ()
   (serv 0 #'req-handler))

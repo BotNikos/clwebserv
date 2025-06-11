@@ -32,9 +32,7 @@ create table history (
 insert into categories (title, color) values
 ('Games', '#8BE9FD'),
 ('Work', '#FFB86C'),
-('Books', '#50FA7B'),
-('Bookmarks', '#BD93F9'),
-('Someting...', '#FF79C6');
+('Books', '#50FA7B');
 
 insert into items (title, url, category_id) values
 -- Games
@@ -56,8 +54,3 @@ insert into query_types (title) values
 ('Create item'),
 ('Goto item'),
 ('Search');
-
--- select * from categories;
--- select * from items;
--- select * from query_types;
--- select * from history;
