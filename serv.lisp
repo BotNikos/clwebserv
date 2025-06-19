@@ -1,17 +1,27 @@
-(require :usocket)
+;; (require :usocket)
+(defpackage :clwebserv
+  (:use :cl :usocket)
+  (:export
+   :serv
+   :send
+   :data :file :temp
+   :status
+   :params
+   :html :css :js :png :jpg :jpeg :svg))
+
+(in-package :clwebserv)
 
 ;;;; Functional part
 
 (defun get-mime (extension)
-  (case (read-from-string extension)
-    (html "text/html")
-    (css "text/css")
-    (js "text/javascript")
-    (png "image/png")
-    (jpg "image/jpg")
-    (jpeg "image/jpeg")
-    (svg "image/svg")
-    (otherwise "text/plain")))
+  (cond ((equal extension "html") "text/html")
+        ((equal extension "css") "text/css")
+        ((equal extension "js") "text/javascript")
+        ((equal extension "png") "image/png")
+        ((equal extension "jpg") "image/jpg")
+        ((equal extension "jpeg") "image/jpeg")
+        ((equal extension "svg") "image/svg")
+        (t "text/plain")))
 
 (defun get-url (line)
   (subseq line
@@ -98,5 +108,3 @@
         (force-output stream)
         (usocket:socket-close connection)))
       (usocket:socket-close socket))))
-
-
